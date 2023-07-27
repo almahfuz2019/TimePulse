@@ -8,18 +8,16 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <!-- Include flatpickr CSS -->
   <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.css" rel="stylesheet">
- 
-
 </head>
 <body class="bg-gray-100">
- <nav class="bg-blue-500 p-4">
+  <nav class="bg-blue-500 p-4">
     <div class="container mx-auto flex items-center justify-between">
-      <div class="text-white text-4xl font-bold">TimePulse</div> <!-- Logo name -->
-      <div class="text-white">Welcome to Your World</div> <!-- Developer name -->
+      <div class="text-white text-2xl sm:text-3xl md:text-4xl font-bold">TimePulse</div> <!-- Logo name -->
+      <div class="text-white text-xs sm:text-md">Welcome to Your World</div> <!-- Developer name -->
     </div>
   </nav>
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-semibold mb-4">Start Your Journey</h1>
+    <h1 class="text-2xl sm:text-3xl  font-semibold mb-4">Start Your Journey</h1>
     <div class="bg-white shadow rounded-lg p-4">
       <label class="text-lg font-semibold" for="planName">Plan Name:</label>
       <input placeholder="Plan Name" id="planName" type="text" class="block w-full px-4 py-2 rounded-lg border focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -31,15 +29,15 @@
       <input id="endDate" type="text" class="block w-full px-4 py-2 rounded-lg border focus:border-blue-500 focus:ring focus:ring-blue-200">
 
       <div class="flex justify-between">
-	   <button id="saveBtn" class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Save</button>
+        <button id="saveBtn" class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Save</button>
         <button id="removeBtn" class="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Remove Plan</button>
-       
       </div>
 
       <p class="text-lg font-semibold mt-8">Today's Date:</p>
       <p id="todayDate" class="text-2xl font-bold mb-4"></p>
+      <p id="daysLeft" class="text-2xl font-bold mb-4 text-red-500 text-center"></p>
 
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         <!-- JavaScript will populate the grid with dates here -->
       </div>
     </div>
@@ -56,23 +54,38 @@
     document.addEventListener("DOMContentLoaded", function () {
       const startDateInput = document.getElementById("startDate");
       const endDateInput = document.getElementById("endDate");
+      const planNameInput = document.getElementById("planName"); // New plan name input
       const saveBtn = document.getElementById("saveBtn");
       const removeBtn = document.getElementById("removeBtn");
       const todayDateElement = document.getElementById("todayDate");
+      const daysLeftElement = document.getElementById("daysLeft");
       const gridContainer = document.querySelector(".grid");
 
       // Initialize flatpickr datepicker for start and end date inputs
       const startDatePicker = flatpickr(startDateInput, {
         defaultDate: "2023-07-24", // Default start date
         maxDate: "2024-01-01", // Max end date
-        dateFormat: "d-m-y",
+        dateFormat: "d-m-Y", // Use the format "d-m-Y" for full year display
       });
 
       const endDatePicker = flatpickr(endDateInput, {
         defaultDate: "2024-01-01", // Default end date
         minDate: "2023-07-24", // Min start date
-        dateFormat: "d-m-y",
+        dateFormat: "d-m-Y", // Use the format "d-m-Y" for full year display
       });
+
+      function updateDaysLeft() {
+        const endDate = new Date(endDatePicker.selectedDates[0]);
+        const todayDate = new Date();
+        const timeDiff = endDate.getTime() - todayDate.getTime();
+        const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+        if (daysLeft > 0) {
+          daysLeftElement.textContent = daysLeft + " Days Left";
+        } else {
+          daysLeftElement.textContent = "Plan has ended";
+        }
+      }
 
       function updateDates() {
         const startDate = new Date(startDatePicker.selectedDates[0]); // User-selected start date
@@ -96,7 +109,8 @@
 
           const dateInput = document.createElement("input");
           dateInput.type = "checkbox";
-	
+          dateInput.classList.add("custom-checkbox"); // Add the custom checkbox class
+
           dateInput.checked = startDate < new Date(); // Mark checkbox as checked if the date has passed
           dateCard.appendChild(dateInput);
 
@@ -109,35 +123,49 @@
           // Move to the next day
           startDate.setDate(startDate.getDate() + 1);
         }
+
+        // Call the function to update days left
+        updateDaysLeft();
       }
 
       // Event listener for Save button
       saveBtn.addEventListener("click", function () {
         updateDates();
 
-        // Save the user-selected start and end dates to localStorage
+        // Save the user-selected start and end dates, and plan name to localStorage
         localStorage.setItem("startDate", startDatePicker.selectedDates[0].toISOString());
         localStorage.setItem("endDate", endDatePicker.selectedDates[0].toISOString());
+        localStorage.setItem("planName", planNameInput.value);
       });
 
       // Event listener for Remove button
       removeBtn.addEventListener("click", function () {
         startDatePicker.clear(); // Clear start date input
         endDatePicker.clear(); // Clear end date input
+        planNameInput.value = ""; // Clear plan name input
         gridContainer.innerHTML = ""; // Clear the grid
 
-        // Remove saved dates from localStorage
+        // Remove saved data from localStorage
         localStorage.removeItem("startDate");
         localStorage.removeItem("endDate");
+        localStorage.removeItem("planName");
+
+        // Call the function to update days left
+        updateDaysLeft();
       });
 
-      // Load saved dates from localStorage on page load
+      // Load saved data from localStorage on page load
       const savedStartDate = localStorage.getItem("startDate");
       const savedEndDate = localStorage.getItem("endDate");
+      const savedPlanName = localStorage.getItem("planName");
 
       if (savedStartDate && savedEndDate) {
         startDatePicker.setDate(new Date(savedStartDate));
         endDatePicker.setDate(new Date(savedEndDate));
+      }
+
+      if (savedPlanName) {
+        planNameInput.value = savedPlanName;
       }
 
       // Update dates initially
@@ -147,111 +175,5 @@
       setInterval(updateDates, 1000);
     });
   </script>
-  <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const startDateInput = document.getElementById("startDate");
-    const endDateInput = document.getElementById("endDate");
-    const planNameInput = document.getElementById("planName"); // New plan name input
-    const saveBtn = document.getElementById("saveBtn");
-    const removeBtn = document.getElementById("removeBtn");
-    const todayDateElement = document.getElementById("todayDate");
-    const gridContainer = document.querySelector(".grid");
-
-    // Initialize flatpickr datepicker for start and end date inputs
-    const startDatePicker = flatpickr(startDateInput, {
-      defaultDate: "2023-07-24", // Default start date
-      maxDate: "2024-01-01", // Max end date
-      dateFormat: "d-m-y",
-    });
-
-    const endDatePicker = flatpickr(endDateInput, {
-      defaultDate: "2024-01-01", // Default end date
-      minDate: "2023-07-24", // Min start date
-      dateFormat: "d-m-y",
-    });
-
-    function updateDates() {
-      const startDate = new Date(startDatePicker.selectedDates[0]); // User-selected start date
-      const endDate = new Date(endDatePicker.selectedDates[0]); // User-selected end date
-
-      if (startDate > endDate) {
-        alert("End date must be after the start date.");
-        return;
-      }
-
-      // Display today's date
-      todayDateElement.textContent = new Date().toISOString().slice(0, 10);
-
-      // Clear the previous grid of dates
-      gridContainer.innerHTML = "";
-
-      // Calculate and display upcoming dates
-      while (startDate <= endDate) {
-        const dateCard = document.createElement("div");
-        dateCard.classList.add("bg-blue-200", "rounded-lg", "p-4", "text-center", "flex", "flex-col", "items-center");
-
-        const dateInput = document.createElement("input");
-        dateInput.type = "checkbox";
-        dateInput.classList.add("custom-checkbox"); // Add the custom checkbox class
-
-        dateInput.checked = startDate < new Date(); // Mark checkbox as checked if the date has passed
-        dateCard.appendChild(dateInput);
-
-        const dateLabel = document.createElement("label");
-        dateLabel.textContent = startDate.toISOString().slice(0, 10);
-        dateCard.appendChild(dateLabel);
-
-        gridContainer.appendChild(dateCard);
-
-        // Move to the next day
-        startDate.setDate(startDate.getDate() + 1);
-      }
-    }
-
-    // Event listener for Save button
-    saveBtn.addEventListener("click", function () {
-      updateDates();
-
-      // Save the user-selected start and end dates, and plan name to localStorage
-      localStorage.setItem("startDate", startDatePicker.selectedDates[0].toISOString());
-      localStorage.setItem("endDate", endDatePicker.selectedDates[0].toISOString());
-      localStorage.setItem("planName", planNameInput.value);
-    });
-
-    // Event listener for Remove button
-    removeBtn.addEventListener("click", function () {
-      startDatePicker.clear(); // Clear start date input
-      endDatePicker.clear(); // Clear end date input
-      planNameInput.value = ""; // Clear plan name input
-      gridContainer.innerHTML = ""; // Clear the grid
-
-      // Remove saved data from localStorage
-      localStorage.removeItem("startDate");
-      localStorage.removeItem("endDate");
-      localStorage.removeItem("planName");
-    });
-
-    // Load saved data from localStorage on page load
-    const savedStartDate = localStorage.getItem("startDate");
-    const savedEndDate = localStorage.getItem("endDate");
-    const savedPlanName = localStorage.getItem("planName");
-
-    if (savedStartDate && savedEndDate) {
-      startDatePicker.setDate(new Date(savedStartDate));
-      endDatePicker.setDate(new Date(savedEndDate));
-    }
-
-    if (savedPlanName) {
-      planNameInput.value = savedPlanName;
-    }
-
-    // Update dates initially
-    updateDates();
-
-    // Update dates every second (1000ms)
-    setInterval(updateDates, 1000);
-  });
-</script>
-
 </body>
 </html>
